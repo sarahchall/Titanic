@@ -102,7 +102,7 @@ model.ThreeFt <- train(Survived ~ Pclass + Sex + Fare,
 print(model.ThreeFt)
 #' Accuracy of 81% is a slight improvement on initial 6 feature model, but the 5 feature model is best so far.
 #'
-#' Test with different model: Recursive Partitioning and Regressive Trees model
+#' Test with different model: recursive partitioning and regressive trees model
 #' ----------------------------------------------------------------------------
 model.rpart <- train(Survived ~ Pclass + Sex + SibSp + 
                        Parch + Embarked + Fare,
@@ -157,15 +157,20 @@ write.csv(output_RF_3FT, file = "output_RF_3FT.csv", row.names = FALSE)
 #' Summary
 #' -------
 #' 
-#' Results from Kaggle:
+#' **Results from Kaggle:**
 #' 
+#' * Random forest with 6 features: 77.9% accuracy
+#' * Random forest with 5 features: 79.4% accuracy
+#' * Random forest with 3 features: 77.5% accuracy
+#' * Recursive partitioning and regressive trees model with 6 features: 78.4% accuracy
 #' 
+#' As expected, the random forest model with 5 features (Sex, Pclass, Fare, SibSp and Parch) performed best.
 #' 
-#' 
+#' No model provided a significant imporvement on the initial model though, so next steps will be required to improve my score.
 #' 
 #' **Next steps to test:**
 #' 
-#' * Is Random Forest the best model?
+#' * Is random forest the best model?
 #' * Is there any interraction between Embarked and Pclass or Fare?
 #' * Can overfitting be reduced?
 #'     + Are Pclass and Fare correlated?
