@@ -1,7 +1,9 @@
-# Titanic survivors classification prediction 
-# Sarah Hall
-# Data sourced from Kaggle https://www.kaggle.com/c/titanic/data
-# 3/11/2018
+#' ---
+#' title: Titanic survivors classification prediction 
+#' author: Sarah Hall
+#' subtitle: Data sourced from Kaggle https://www.kaggle.com/c/titanic/data
+#' date: 3/11/2018
+#' ---
 
 #load librarys
 library(caret)
@@ -14,47 +16,49 @@ library(s20x)
 TitanicTrain.df <- read.csv("train.csv", header = TRUE, stringsAsFactors = FALSE)
 TitanicTest.df <- read.csv("test.csv", header = TRUE, stringsAsFactors = FALSE)
 
-# view data sets
+#' View data sets:
 head(TitanicTrain.df)
 head(TitanicTest.df)
-#quick Data Quality Assessment
+#' Quick data quality assessment:
+#' ------------------------------
 summary(TitanicTrain.df)
-# Age contains NA's
-
-#-------------------------------------------
-# Exploratory Data Analysis and test for useful variables / features
+#' Age contains NA's, will need to impute these if using age as a feature.
+#'
+#' Exploratory data analysis
+#' -----------------------------------------------------------------
+#' Test for useful features:
 
 names(TitanicTrain.df)
 qt.df <- TitanicTrain.df %>%
   dplyr::select(Age,Fare)
 
 pairs20x(qt.df)
-# Age and Fare don't seem particualrly correlated
-
-## Explore continuious variables
+#' Age and Fare don't seem particualrly correlated.
+#'
+#' Explore continuious variables:
 boxplot(TitanicTrain.df$Age ~ TitanicTrain.df$Survived)
-# Age unlikely to be a useful predictor
+#' Age unlikely to be a useful predictor, will not use as feature.
 boxplot(TitanicTrain.df$Fare ~ TitanicTrain.df$Survived)
-# Fare could be useful
-
-## Crosstabs for categorical variables
+#' Fare could be useful, will use as feature.
+#'
+#' Explore categorical variables:
 prop.table(table(TitanicTrain.df[,c("Survived", "Pclass")]),2)
-#Pclass could be a useful predictor of Survived due to the survival ratio of each class
+#' Pclass could be a useful predictor due to the survival ratio of each class, will use as a feature.
 prop.table(table(TitanicTrain.df[,c("Survived", "Sex")]),2)
-# Sex could be a useful predictor, higher % of women survived than men
-
+#' Sex could be a useful predictor, higher % of women survived than men, will use as a feature.
 prop.table(table(TitanicTrain.df[,c("Survived", "SibSp")]),2)
-#SibSp could be useful, though unlikely
-
+#' SibSp could be useful, though unlikely. Will use as a feature initially.
 prop.table(table(TitanicTrain.df[,c("Survived", "Parch")]),2)
-#Parch could be useful, though unlikely
-
+#' Parch could be useful, though unlikely. Will use as a feature initially.
 prop.table(table(TitanicTrain.df[,c("Survived", "Embarked")]),2)
-# Embarked looks useful
+#' Embarked looks useful, will use as a feature.
+#' Name, Cabin, and Ticket will not be used as features.
 
 
-#-------------------------------------------
-# Train model
+#' 
+#' Initial model train: random forest with six features
+#' ----------------------------------------------------
+
 # Convert Survived to factor
 TitanicTrain.df$Survived = factor(TitanicTrain.df$Survived)
 # Set a random seed
@@ -65,56 +69,58 @@ model <- train(Survived ~ Pclass + Sex + SibSp +
                data = TitanicTrain.df,
                method = "rf",
                trControl = trainControl(method = "cv", number = 5))
-
 print(model)
-# 79.9% accuracy looks good
+#' 79% accuracy looks good for a first stab.
 
-## Try with Recursive Partitioning and Regressive Trees model
-model.rpart <- train(Survived ~ Pclass + Sex + SibSp + 
-                 Parch + Embarked + Fare,
-               data = TitanicTrain.df,
-               method = "rpart",
-               trControl = trainControl(method = "cv", number = 10))
-print (model.rpart)
-# random forest is slightly better
-
-#-------------------------------------------------
-# Test model specific variable importance
+#'
+#' Test model specific variable importance
+#' -----------------------------------------
 
 varImp(model, useModel = TRUE, scale = TRUE)
 plot(varImp(model, useModel = TRUE, scale = FALSE), top = 5)
-# Sex is very important, Fare and Pclass are important and Parch and SibSp may be important (about the same impact)
-# Test with Sex, Fare and Pclass, and another model with all but embarked
-
-#-------------------------------------------------
-# Train random forest model with Sex, Fare,Pclass, SibSp and Parch
-
+#' Sex is a very important feature, Fare and Pclass are important and Parch and SibSp may be important (about the same impact as each other).
+#' 
+#' Test two new models, both random forest. One with Sex, Fare and Pclass as features, the other with SibSp and Parch as well.
+#' 
+#' Train random forest model with Sex, Fare,Pclass, SibSp and Parch
+#' ---------------------------------------------------------------
 model.FiveFt <- train(Survived ~ Pclass + Sex + SibSp + 
                  Parch + Fare,
                data = TitanicTrain.df,
                method = "rf",
                trControl = trainControl(method = "cv", number = 5))
-
 print(model.FiveFt)
-# Accuracy improved to 80%... very mild improvement
+#' Accuracy improved to 82%, good improvement.
 
-
-# Train random forest model with Sex, Fare and Pclass
-
+#'
+#' Train random forest model with Sex, Fare and Pclass
+#' ---------------------------------------------------
 model.ThreeFt <- train(Survived ~ Pclass + Sex + Fare,
                       data = TitanicTrain.df,
                       method = "rf",
                       trControl = trainControl(method = "cv", number = 5))
-
 print(model.ThreeFt)
-# Accuracy improved to 81%... slightly better improvement
+#' Accuracy of 81% is a slight improvement on initial 6 feature model, but the 5 feature model is best so far.
+#'
+#' Test with different model: Recursive Partitioning and Regressive Trees model
+#' ----------------------------------------------------------------------------
+model.rpart <- train(Survived ~ Pclass + Sex + SibSp + 
+                       Parch + Embarked + Fare,
+                     data = TitanicTrain.df,
+                     method = "rpart",
+                     trControl = trainControl(method = "cv", number = 5))
+print (model.rpart)
+#' Accuracy of 81% about on par with three feature random forest model.
+#' 
+#' Five feature random forest is still best.
 
-#------------------------------
-# Predict all four models on test set
+#'
+#' Predict all four models on the test set of data
+#' -----------------------------------------------
 
 summary(TitanicTest.df)
-# NA value in "Fare"
-# impute with mean of "Fare" col
+#' NA value in "Fare" column.
+#' Fix this by imputing with mean of "Fare" column.
 TitanicTest.df$Fare <- ifelse(is.na(TitanicTest.df$Fare), mean(TitanicTest.df$Fare, na.rm = TRUE), TitanicTest.df$Fare)
 
 # predict on test set
@@ -124,7 +130,8 @@ TitanicTest.df$Survived.RF_5FT <- predict(model.FiveFt, newdata = TitanicTest.df
 TitanicTest.df$Survived.RF_3FT <- predict(model.ThreeFt, newdata = TitanicTest.df)
 
 
-# Create output files for Kaggle
+#' Create output files for Kaggle
+#' ------------------------------
 
 output_RF_6FT <- TitanicTest.df %>%
   dplyr::select(PassengerId,Survived.RF_6FT)
@@ -147,12 +154,20 @@ colnames(output_RF_3FT)[2] <- "Survived"
 write.csv(output_RF_3FT, file = "output_RF_3FT.csv", row.names = FALSE)
 
 
-
-
-#-------------------------------------------------------------------
-## Next Steps to test:
-## Is Random Forest the best model?
-## Is there any interraction between Embarked and Pclass or Fare?
-## Are Pclass and Fare proxys for each other?
-## Are SibSp and Parch proxys for each other?
+#' Summary
+#' -------
+#' 
+#' Results from Kaggle:
+#' 
+#' 
+#' 
+#' 
+#' 
+#' **Next steps to test:**
+#' 
+#' * Is Random Forest the best model?
+#' * Is there any interraction between Embarked and Pclass or Fare?
+#' * Can overfitting be reduced?
+#'     + Are Pclass and Fare correlated?
+#'     + Are SibSp and Parch correlated?
 
